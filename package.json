@@ -1,0 +1,31 @@
+{
+  "name": "tickets-api",
+  "version": "1.0.0",
+  "description": "API de um sistema de venda de ingressos.",
+  "homepage": "https://github.com/Valverd/tickets-api#readme",
+  "bugs": {
+    "url": "https://github.com/Valverd/tickets-api/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Valverd/tickets-api.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "tsx watch src/server.ts"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.13.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "mysql2": "^3.12.0"
+  }
+}
