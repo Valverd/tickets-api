@@ -10,6 +10,6 @@ RUN npm i -D typescript tsx
 
 COPY . .
 
-EXPOSE 3000
+EXPOSE 4000
 
 CMD ["npm", "run", "dev"]
