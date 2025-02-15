@@ -2,14 +2,14 @@ import express from "express";
 import cors from 'cors'
 import "dotenv/config"
 import { db } from "./db/db";
-import user_route from './routes/user_route'
+import user_routes from './routes/user_routes'
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-app.use('/user', user_route)
+app.use('/user', user_routes)
 
 db.sync().then(() => {
   console.log("Connected to database on sequelize");
