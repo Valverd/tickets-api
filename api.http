@@ -1,7 +1,5 @@
 GET http://localhost:4000/user/1
-HEAD {
-    Authorization: "teste"
-}
+Authorization: 
 
 # PUT http://localhost:4000/user/alter/1
 # Content-Type: application/json

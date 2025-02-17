@@ -1,7 +1,16 @@
 import { db } from '../db/db'
-import { DataTypes } from 'sequelize'
+import { DataTypes, Model } from 'sequelize'
 
-const User = db.define('User', {
+export interface UserModel extends Model {
+    id: number;
+    name: string
+    email: string;
+    password: string;
+    birth: Date
+  }
+  
+
+const User = db.define<UserModel>('User', {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,

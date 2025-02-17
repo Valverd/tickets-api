@@ -6,8 +6,6 @@ COPY package*.json ./
 
 RUN npm install
 
-RUN npm i -D typescript tsx
-
 COPY . .
 
 EXPOSE 4000

@@ -1,9 +1,10 @@
 import { Response, Request } from "express"
 import bcrypt from 'bcrypt'
 import User from "../models/User"
+import jwt from 'jsonwebtoken'
 
 
-type RouteHandler<TParams = {}, TBody = {}, TQuery = {}> = (
+type RouteHandler<TParams = {}, TBody = {}, TQuery = {}> = ( // Generics para receberem valores vazios caso não use no req (Request)
     req: Request<TParams, {}, TBody, TQuery>,
     res: Response
 ) => Promise<Response | void>
@@ -27,7 +28,8 @@ export const get_user: RouteHandler<{ id: string }> = async (req, res) => {
         if (error instanceof Error) {
             res.status(500).json({ message: error.message })
         } else {
-            console.log("Erro desconhecido:")
+            console.log("Erro desconhecido: ", error)
+            return res.status(500).json({ message: "Erro desconhecido", error })
         }
     }
 }
@@ -50,9 +52,13 @@ export const create_user: RouteHandler<{}, UserRequestBody> = async (req, res) =
         await User.create(user)
         res.json({ message: 'Usuário Criado.' })
 
-    } catch (error: any) {
-        console.error("Erro no create_user:", error); // Log detalhado do erro
-        res.status(500).json({ message: "Erro interno no servidor", error: error.message });
+    } catch (error) {
+        if (error instanceof Error) {
+            res.status(500).json({ message: error.message })
+        } else {
+            console.log("Erro desconhecido: ", error)
+            return res.status(500).json({ message: "Erro desconhecido", error })
+        }
     }
 }
 
@@ -73,8 +79,13 @@ export const alter_user: RouteHandler<{ id: string }, UserRequestBody> = async (
 
         await User.update(user, { where: { id } })
         res.json({ message: 'Usuário alterado com sucesso.' })
-    } catch (error: any) {
-        res.status(500).json({ message: error.message })
+    } catch (error) {
+        if (error instanceof Error) {
+            res.status(500).json({ message: error.message })
+        } else {
+            console.log("Erro desconhecido: ", error)
+            return res.status(500).json({ message: "Erro desconhecido", error })
+        }
     }
 }
 
@@ -88,8 +99,35 @@ export const delete_user: RouteHandler<{ id: string }> = async (req, res) => {
 
         await User.destroy({ where: { id } })
         res.json({ message: 'Usuário deletado.' })
-    } catch (error: any) {
-        res.status(500).send({ message: "Erro interno no servidor", error: error.message });
+    } catch (error) {
+        if (error instanceof Error) {
+            res.status(500).json({ message: error.message })
+        } else {
+            console.log("Erro desconhecido: ", error)
+            return res.status(500).json({ message: "Erro desconhecido", error })
+        }
     }
 }
 
+export const login: RouteHandler<{}, UserRequestBody> = async (req, res) => {
+    const { email, password } = req.body
+
+    const selected_user = await User.findOne({ where: { email } })
+    if (!selected_user) return res.status(404).json({ message: "Usuário ou senha estão incorretos." })
+
+    const email_password_match = bcrypt.compareSync(password, selected_user.password)
+    if (!email_password_match) return res.status(404).json({ message: "Usuário ou senha estão incorretos." })
+
+    try {
+        const token = jwt.sign({ id: selected_user.id }, process.env.TOKEN_SECRET, { expiresIn: '24h' })
+        res.json({ message: "Login efetuado com sucesso.", token: token })
+
+    } catch (error) {
+        if (error instanceof Error) {
+            res.status(500).json({ message: error.message })
+        } else {
+            console.log("Erro desconhecido: ", error)
+            return res.status(500).json({ message: "Erro desconhecido", error })
+        }
+    }
+}
