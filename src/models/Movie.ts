@@ -8,7 +8,7 @@ const Movie = db.define('Movie', {
         autoIncrement: true
     },
     name: {
-        type: DataTypes.STRING(255),
+        type: DataTypes.STRING(100),
         allowNull: false
     },
     tickets_number: {
@@ -18,7 +18,13 @@ const Movie = db.define('Movie', {
     description: {
         type: DataTypes.STRING(255),
         allowNull: false
-    }
-});
+    },
+    age_group: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+    },
+    
+}, {timestamps: false});
+
 
 export default Movie

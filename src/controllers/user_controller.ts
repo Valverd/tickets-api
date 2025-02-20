@@ -4,19 +4,20 @@ import User from "../models/User"
 import jwt from 'jsonwebtoken'
 
 
-type RouteHandler<TParams = {}, TBody = {}, TQuery = {}> = ( // Generics para receberem valores vazios caso não use no req (Request)
+type RouteUserHandler<TParams = {}, TBody = {}, TQuery = {}> = ( // Generics para receberem valores vazios caso não use no req (Request)
     req: Request<TParams, {}, TBody, TQuery>,
     res: Response
 ) => Promise<Response | void>
 
-interface UserRequestBody {
+interface UserBody {
     name: string,
     email: string,
     password: string,
     birth: Date
 }
 
-export const get_user: RouteHandler<{ id: string }> = async (req, res) => {
+
+export const get_user: RouteUserHandler<{ id: string }> = async (req, res) => {
     try {
         const { id } = req.params
 
@@ -25,16 +26,11 @@ export const get_user: RouteHandler<{ id: string }> = async (req, res) => {
 
         res.json(user)
     } catch (error) {
-        if (error instanceof Error) {
-            res.status(500).json({ message: error.message })
-        } else {
-            console.log("Erro desconhecido: ", error)
-            return res.status(500).json({ message: "Erro desconhecido", error })
-        }
+        handleError(res, error)
     }
 }
 
-export const create_user: RouteHandler<{}, UserRequestBody> = async (req, res) => {
+export const create_user: RouteUserHandler<{}, UserBody> = async (req, res) => {
     try {
         const { name, email, password, birth } = req.body
 
@@ -51,18 +47,14 @@ export const create_user: RouteHandler<{}, UserRequestBody> = async (req, res) =
 
         await User.create(user)
         res.json({ message: 'Usuário Criado.' })
+        return
 
     } catch (error) {
-        if (error instanceof Error) {
-            res.status(500).json({ message: error.message })
-        } else {
-            console.log("Erro desconhecido: ", error)
-            return res.status(500).json({ message: "Erro desconhecido", error })
-        }
+        handleError(res, error)
     }
 }
 
-export const alter_user: RouteHandler<{ id: string }, UserRequestBody> = async (req, res) => {
+export const alter_user: RouteUserHandler<{ id: string }, UserBody> = async (req, res) => {
     try {
         const { id } = req.params
         const { name, email, password, birth } = req.body
@@ -80,16 +72,11 @@ export const alter_user: RouteHandler<{ id: string }, UserRequestBody> = async (
         await User.update(user, { where: { id } })
         res.json({ message: 'Usuário alterado com sucesso.' })
     } catch (error) {
-        if (error instanceof Error) {
-            res.status(500).json({ message: error.message })
-        } else {
-            console.log("Erro desconhecido: ", error)
-            return res.status(500).json({ message: "Erro desconhecido", error })
-        }
+        handleError(res, error)
     }
 }
 
-export const delete_user: RouteHandler<{ id: string }> = async (req, res) => {
+export const delete_user: RouteUserHandler<{ id: string }> = async (req, res) => {
     try {
         const { id } = req.params
 
@@ -100,34 +87,32 @@ export const delete_user: RouteHandler<{ id: string }> = async (req, res) => {
         await User.destroy({ where: { id } })
         res.json({ message: 'Usuário deletado.' })
     } catch (error) {
-        if (error instanceof Error) {
-            res.status(500).json({ message: error.message })
-        } else {
-            console.log("Erro desconhecido: ", error)
-            return res.status(500).json({ message: "Erro desconhecido", error })
-        }
+        handleError(res, error)
     }
 }
 
-export const login: RouteHandler<{}, UserRequestBody> = async (req, res) => {
-    const { email, password } = req.body
-
-    const selected_user = await User.findOne({ where: { email } })
-    if (!selected_user) return res.status(404).json({ message: "Usuário ou senha estão incorretos." })
-
-    const email_password_match = bcrypt.compareSync(password, selected_user.password)
-    if (!email_password_match) return res.status(404).json({ message: "Usuário ou senha estão incorretos." })
-
+export const login: RouteUserHandler<{}, UserBody> = async (req, res) => {
     try {
+        const { email, password } = req.body
+
+        const selected_user = await User.findOne({ where: { email } })
+        if (!selected_user) return res.status(404).json({ message: "Usuário ou senha estão incorretos." })
+
+        const email_password_match = bcrypt.compareSync(password, selected_user.password)
+        if (!email_password_match) return res.status(404).json({ message: "Usuário ou senha estão incorretos." })
+
         const token = jwt.sign({ id: selected_user.id }, process.env.TOKEN_SECRET, { expiresIn: '24h' })
         res.json({ message: "Login efetuado com sucesso.", token: token })
 
     } catch (error) {
-        if (error instanceof Error) {
-            res.status(500).json({ message: error.message })
-        } else {
-            console.log("Erro desconhecido: ", error)
-            return res.status(500).json({ message: "Erro desconhecido", error })
-        }
+        handleError(res, error)
+    }
+}
+
+const handleError = (res: Response, error: unknown) => {
+    if (error instanceof Error) {
+        return res.status(500).json({ message: error.message })
+    } else {
+        return res.status(500).json({ message: "Erro desconhecido", error })
     }
 }

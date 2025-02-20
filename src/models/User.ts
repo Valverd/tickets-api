@@ -1,5 +1,6 @@
 import { db } from '../db/db'
 import { DataTypes, Model } from 'sequelize'
+import Ticket from './Ticket';
 
 export interface UserModel extends Model {
     id: number;

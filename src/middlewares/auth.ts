@@ -1,27 +1,36 @@
 import { NextFunction, Response } from "express";
-import { IncomingHttpHeaders } from "http";
 import jwt from 'jsonwebtoken'
+import { UserModel } from "../models/User";
 
-interface MiddlewareHandler extends Omit<Request, "headers"> {
-    headers: IncomingHttpHeaders & { authorization?: string }
+type MiddlewareHandler = (
+    req: MiddlewareRequest,
+    res: Response,
+    next: NextFunction
+) => void
+
+interface MiddlewareRequest extends Request {
+    headers: Request["headers"] & { authorization?: string }
+    user: UserModel
 }
 
-export const auth = async (req: MiddlewareHandler, res: Response, next: NextFunction) => {
+export const auth: MiddlewareHandler = async (req, res, next) => {
     const token = req.headers.authorization;
 
     if (!token) {
-        return res.status(400).json({ message: "Acesso não autorizado." });
+        res.status(400).json({ message: "Acesso não autorizado." });
+        return
     };
 
     try {
         await jwt.verify(token, process.env.TOKEN_SECRET)
-        return next()
+        console.log(jwt.verify(token, process.env.TOKEN_SECRET))
+        next()
 
     } catch (error) {
         if (error instanceof Error) {
             return res.status(500).json({ message: error.message })
         } else {
-            return console.log("Erro desconhecido:", error)
+            return res.status(500).json({ message: "Erro desconhecido", error })
         }
     }
 }

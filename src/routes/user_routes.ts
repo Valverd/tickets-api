@@ -5,14 +5,14 @@ import { auth } from "../middlewares/auth";
 const router = express.Router()
 
 
-router.post('/create', create_user as unknown as RequestHandler)
+router.post('/create', create_user)
 
-router.post('/login', login as unknown as RequestHandler)
+router.post('/login', login)
 
-router.put('/alter/:id', alter_user as unknown as RequestHandler)
+router.put('/alter/:id', auth, alter_user)
 
-router.delete('/delete', delete_user as unknown as RequestHandler)
+router.delete('/delete/:id', auth, delete_user)
 
-router.get('/:id', auth, get_user as unknown as RequestHandler)
+router.get('/:id', get_user)
 
 export default router
