@@ -1,15 +1,7 @@
 import { db } from '../db/db'
-import { DataTypes, Model } from 'sequelize'
-import Ticket from './Ticket';
+import { DataTypes} from 'sequelize'
+import { UserModel } from '../types/model_types';
 
-export interface UserModel extends Model {
-    id: number;
-    name: string
-    email: string;
-    password: string;
-    birth: Date
-  }
-  
 
 const User = db.define<UserModel>('User', {
     id: {

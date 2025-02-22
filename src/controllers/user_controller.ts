@@ -2,25 +2,14 @@ import { Response, Request } from "express"
 import bcrypt from 'bcrypt'
 import User from "../models/User"
 import jwt from 'jsonwebtoken'
+import { UserModel } from "../types/model_types"
+import { AuthenticatedRoutesHandler } from "../types/request_types"
 
 
-type RouteUserHandler<TParams = {}, TBody = {}, TQuery = {}> = ( // Generics para receberem valores vazios caso não use no req (Request)
-    req: Request<TParams, {}, TBody, TQuery>,
-    res: Response
-) => Promise<Response | void>
-
-interface UserBody {
-    name: string,
-    email: string,
-    password: string,
-    birth: Date
-}
-
-
-export const get_user: RouteUserHandler<{ id: string }> = async (req, res) => {
+export const get_user: AuthenticatedRoutesHandler<{ id: string }> = async (req, res) => {
     try {
         const { id } = req.params
-
+        console.log(req)
         const user = await User.findByPk(id)
         if (!user) return res.status(404).json({ message: 'Usuário não encontrado.' })
 
@@ -30,7 +19,7 @@ export const get_user: RouteUserHandler<{ id: string }> = async (req, res) => {
     }
 }
 
-export const create_user: RouteUserHandler<{}, UserBody> = async (req, res) => {
+export const create_user: AuthenticatedRoutesHandler<{}, UserModel> = async (req, res) => {
     try {
         const { name, email, password, birth } = req.body
 
@@ -54,7 +43,7 @@ export const create_user: RouteUserHandler<{}, UserBody> = async (req, res) => {
     }
 }
 
-export const alter_user: RouteUserHandler<{ id: string }, UserBody> = async (req, res) => {
+export const alter_user: AuthenticatedRoutesHandler<{ id: string }, UserModel> = async (req, res) => {
     try {
         const { id } = req.params
         const { name, email, password, birth } = req.body
@@ -76,7 +65,7 @@ export const alter_user: RouteUserHandler<{ id: string }, UserBody> = async (req
     }
 }
 
-export const delete_user: RouteUserHandler<{ id: string }> = async (req, res) => {
+export const delete_user: AuthenticatedRoutesHandler<{ id: string }> = async (req, res) => {
     try {
         const { id } = req.params
 
@@ -91,7 +80,7 @@ export const delete_user: RouteUserHandler<{ id: string }> = async (req, res) =>
     }
 }
 
-export const login: RouteUserHandler<{}, UserBody> = async (req, res) => {
+export const login: AuthenticatedRoutesHandler<{}, UserModel> = async (req, res) => {
     try {
         const { email, password } = req.body
 

@@ -1,7 +1,8 @@
 import { db } from '../db/db'
 import { DataTypes } from 'sequelize'
+import { MovieModel } from '../types/model_types';
 
-const Movie = db.define('Movie', {
+const Movie = db.define<MovieModel>('Movie', {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,

@@ -1,29 +1,16 @@
 import { NextFunction, Response } from "express";
-import jwt from 'jsonwebtoken'
-import { UserModel } from "../models/User";
+import jwt, { JwtPayload } from 'jsonwebtoken'
+import { MiddlewareAuthHandler } from "../types/middleware_types";
 
-type MiddlewareHandler = (
-    req: MiddlewareRequest,
-    res: Response,
-    next: NextFunction
-) => void
 
-interface MiddlewareRequest extends Request {
-    headers: Request["headers"] & { authorization?: string }
-    user: UserModel
-}
-
-export const auth: MiddlewareHandler = async (req, res, next) => {
+export const auth: MiddlewareAuthHandler = async (req, res, next) => {
     const token = req.headers.authorization;
 
-    if (!token) {
-        res.status(400).json({ message: "Acesso não autorizado." });
-        return
-    };
+    if (!token) return res.status(400).json({ message: "Acesso não autorizado." })
 
     try {
-        await jwt.verify(token, process.env.TOKEN_SECRET)
-        console.log(jwt.verify(token, process.env.TOKEN_SECRET))
+        const user_id = await jwt.verify(token, process.env.TOKEN_SECRET)
+        req.user_id = (user_id as JwtPayload).id
         next()
 
     } catch (error) {

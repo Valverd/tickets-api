@@ -1,9 +1,9 @@
 import { db } from '../db/db'
 import { DataTypes } from 'sequelize'
-import Ticket from './Ticket';
 import Room from './Room';
+import { PlaceModel } from '../types/model_types';
 
-const Place = db.define('Place', {
+const Place = db.define<PlaceModel>('Place', {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
