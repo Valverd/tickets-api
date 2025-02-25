@@ -4,6 +4,7 @@ import Movie from "../models/Movie"
 import Room from "../models/Room"
 import Place from "../models/Place"
 import { AuthenticatedRoutesHandler } from "../types/request_types"
+import redis from "../../redis"
 
 export const get_movies: AuthenticatedRoutesHandler = async (req, res) => {
     try {
@@ -40,15 +41,20 @@ export const choose_place: AuthenticatedRoutesHandler<{}, { place_id: string }> 
         const { place_id } = req.body
         const { user_id } = req
 
-        const place = await Place.findByPk(place_id)
+        const reservation = await redis.get(`place_id:${place_id}`)
 
-        if (!place) return res.status(404).json({ message: "Lugar não encontrado" })
-        if (place.status == "occupied" || place.status == "reserved") return res.status(400).json({ message: "Lugar ja está reservado." })
+        if (reservation) return res.status(400).json({ message: "Esse assento já está reservado." })
 
-        await Place.update({ status: 'reserved' }, { where: { id: place_id } })
-        const place_token = await jwt.sign({ user_id, place_id }, process.env.TOKEN_SECRET, { expiresIn: '60s' })
-        
-        res.json({ message: "Lugar reservado, você tem 1 minuto para finalizar a seção", place_token})
+        await redis.setex(`place_id:${place_id}`, 60, user_id)
+        // const place = await Place.findByPk(place_id)
+
+        // if (!place) return res.status(404).json({ message: "Lugar não encontrado" })
+        // if (place.status == "occupied" || place.status == "reserved") return res.status(400).json({ message: "Lugar ja está reservado." })
+
+        // await Place.update({ status: 'reserved' }, { where: { id: place_id } })
+        // const place_token = await jwt.sign({ user_id, place_id }, process.env.TOKEN_SECRET, { expiresIn: '60s' })
+
+        res.json({ message: "Lugar reservado, você tem 1 minuto para finalizar a seção" })
     } catch (error) {
         handleError(res, error)
     }

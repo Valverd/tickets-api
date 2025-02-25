@@ -1,4 +1,9 @@
 services:
+  redis:
+    image: redis:7.0.0
+    container_name: redis-conatainer
+    ports:
+      - "6379:6379"
   mysql:
     image: mysql:8.0
     restart: always
@@ -18,11 +23,13 @@ services:
       - "${PORT}:${PORT}"
     depends_on:
       - mysql
+      - redis
     environment:
       MYSQL_HOST: ${MYSQL_HOST}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
+      REDIS_HOST: ${REDIS_HOST}
     volumes:
       - .:/app
     working_dir: /app
