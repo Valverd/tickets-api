@@ -1,9 +1,10 @@
 services:
-  redis:
-    image: redis:7.0.0
-    container_name: redis-conatainer
+  memcached:
+    image: memcached:1.6.37
+    container_name: memcached-container
+    restart: always
     ports:
-      - "6379:6379"
+      - "11211:11211"
   mysql:
     image: mysql:8.0
     restart: always
@@ -23,8 +24,9 @@ services:
       - "${PORT}:${PORT}"
     depends_on:
       - mysql
-      - redis
+      - memcached
     environment:
+      MEMCACHED_HOST: ${MEMCACHED_HOST}
       MYSQL_HOST: ${MYSQL_HOST}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}

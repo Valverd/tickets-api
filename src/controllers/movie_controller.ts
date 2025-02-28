@@ -1,10 +1,10 @@
 import { Response } from "express"
-import jwt from 'jsonwebtoken'
 import Movie from "../models/Movie"
 import Room from "../models/Room"
 import Place from "../models/Place"
 import { AuthenticatedRoutesHandler } from "../types/request_types"
-import redis from "../../redis"
+import memcached from "../../memcached"
+import { promisify } from "util"
 
 export const get_movies: AuthenticatedRoutesHandler = async (req, res) => {
     try {
@@ -37,24 +37,21 @@ export const get_places_by_rooms: AuthenticatedRoutesHandler<{ room_id: string }
 }
 
 export const choose_place: AuthenticatedRoutesHandler<{}, { place_id: string }> = async (req, res) => {
+
+    const memGet = promisify(memcached.get).bind(memcached)
+    const memSet = promisify(memcached.set).bind(memcached)
+
     try {
         const { place_id } = req.body
         const { user_id } = req
 
-        const reservation = await redis.get(`place_id:${place_id}`)
+        const reservation = await memGet(`place_id:${place_id}`)
+        if(reservation) return res.status(400).json({messaage: "Outra pessoa já está reservando esse lugar."})
 
-        if (reservation) return res.status(400).json({ message: "Esse assento já está reservado." })
+        await memSet(`place_id:${place_id}`, user_id, 60)
 
-        await redis.setex(`place_id:${place_id}`, 60, user_id)
-        // const place = await Place.findByPk(place_id)
+        res.json({message: "Lugar reservado! Você tem 1 minuto para finalizar a seção."})
 
-        // if (!place) return res.status(404).json({ message: "Lugar não encontrado" })
-        // if (place.status == "occupied" || place.status == "reserved") return res.status(400).json({ message: "Lugar ja está reservado." })
-
-        // await Place.update({ status: 'reserved' }, { where: { id: place_id } })
-        // const place_token = await jwt.sign({ user_id, place_id }, process.env.TOKEN_SECRET, { expiresIn: '60s' })
-
-        res.json({ message: "Lugar reservado, você tem 1 minuto para finalizar a seção" })
     } catch (error) {
         handleError(res, error)
     }

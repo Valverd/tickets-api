@@ -6,6 +6,6 @@ declare namespace NodeJS {
     MYSQL_HOST: string;
     PORT: number;
     TOKEN_SECRET: string;
-    REDIS_HOST: string
+    MEMCACHED_HOST: string
   }
 }
