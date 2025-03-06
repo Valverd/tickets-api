@@ -22,3 +22,10 @@ export interface PlaceModel extends Model {
     status: string
     room_id: number
 }
+
+export interface RoomModel extends Model {
+    id: number
+    room: number
+    movie_id: number
+    price_id: number
+}

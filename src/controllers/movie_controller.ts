@@ -46,11 +46,14 @@ export const choose_place: AuthenticatedRoutesHandler<{}, { place_id: string }> 
         const { user_id } = req
 
         const reservation = await memGet(`place_id:${place_id}`)
-        if(reservation) return res.status(400).json({messaage: "Outra pessoa já está reservando esse lugar."})
+        if (reservation) return res.status(400).json({ message: "Outra pessoa já está reservando esse lugar." })
+
+        const place = await Place.findByPk(place_id)
+        if (place?.status == "occupied") return res.status(400).json({ message: "Lucar já está ocupado." })
 
         await memSet(`place_id:${place_id}`, user_id, 60)
 
-        res.json({message: "Lugar reservado! Você tem 1 minuto para finalizar a seção."})
+        res.json({ message: "Lugar reservado! Você tem 1 minuto para finalizar a seção." })
 
     } catch (error) {
         handleError(res, error)
