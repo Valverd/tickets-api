@@ -24,6 +24,10 @@ const Movie = db.define<MovieModel>('Movie', {
         type: DataTypes.INTEGER,
         allowNull: false
     },
+    duration: {
+        type: DataTypes.TIME,
+        allowNull: false
+    }
     
 }, {timestamps: false});
 

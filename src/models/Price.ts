@@ -10,10 +10,6 @@ const Price = db.define('Price', {
     price: {
         type: DataTypes.FLOAT,
         allowNull: false
-    },
-    name: {
-        type: DataTypes.STRING,
-        allowNull: false
     }
 }, {timestamps: false});
 
