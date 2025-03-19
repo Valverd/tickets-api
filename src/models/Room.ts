@@ -11,7 +11,11 @@ const Room = db.define<RoomModel>('Room', {
         autoIncrement: true
     },
     room: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    type_room: {
+        type: DataTypes.ENUM("VIP", "Normal"),
         allowNull: false
     }
 }, {timestamps: false});

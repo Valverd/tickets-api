@@ -16,16 +16,17 @@ export interface MovieModel extends Model {
     age_group: number
 }
 
-export interface PlaceModel extends Model {
-    id: number
-    place: string
-    status: string
-    room_id: number
-}
-
 export interface RoomModel extends Model {
     id: number
     room: number
     movie_id: number
     price_id: number
+    type_room: string
+}
+
+export interface PlaceModel extends Model {
+    id: number
+    place: string
+    status: string
+    room_id: number
 }
