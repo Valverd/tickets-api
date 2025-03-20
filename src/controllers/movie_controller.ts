@@ -15,22 +15,13 @@ export const get_movies: AuthenticatedRoutesHandler = async (req, res) => {
     }
 }
 
-export const get_rooms_movies: AuthenticatedRoutesHandler = async (req, res) => {
+export const get_movie_id: AuthenticatedRoutesHandler<{ movie_id: string }> = async (req, res) => {
+
+    const { movie_id } = req.params
+
     try {
-        const movies_rooms = await Room.findAll({ include: Movie })
-        res.json(movies_rooms)
-
-    } catch (error) {
-        handleError(res, error)
-    }
-}
-
-export const get_places_by_rooms: AuthenticatedRoutesHandler<{ room_id: string }> = async (req, res) => {
-    try {
-        const { room_id } = req.params
-        const places = await Place.findAll({ where: { room_id } })
-        res.json(places)
-
+        const movie = await Movie.findByPk(movie_id)
+        res.json({ message: "Filme encontrado", movie })
     } catch (error) {
         handleError(res, error)
     }
