@@ -9,11 +9,8 @@ const Reservation = db.define('Reservation', {
         type: DataTypes.INTEGER,
         primaryKey: true,
         autoIncrement: true
-    },
-    place: {
-        type: DataTypes.STRING,
     }
-});
+}, {timestamps: false});
 
 User.hasMany(Reservation, {foreignKey: "user_id"})
 Reservation.belongsTo(User, {foreignKey: "user_id"})

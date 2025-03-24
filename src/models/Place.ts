@@ -12,11 +12,7 @@ const Place = db.define<PlaceModel>('Place', {
     place: {
         type: DataTypes.CHAR(3),
         allowNull: false
-    },
-    status: {
-        type: DataTypes.STRING(10),
-        allowNull: false
-    },
+    }
 }, {timestamps: false});
 
 

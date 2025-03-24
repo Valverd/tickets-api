@@ -2,12 +2,16 @@ import { Response } from "express"
 import { db } from "../db/db"
 import { AuthenticatedRoutesHandler } from "../types/request_types"
 import Section from "../models/Section"
+import Sequelize from "sequelize"
+import Place from "../models/Place"
+import Reservation from "../models/Reservation"
+import memcached from "../../memcached"
+import { promisify } from "util"
 
 export const get_sections: AuthenticatedRoutesHandler = async (req, res) => {
     try {
 
         const sections = await Section.findAll()
-
         res.json({ message: sections })
 
     } catch (error) {
@@ -15,9 +19,9 @@ export const get_sections: AuthenticatedRoutesHandler = async (req, res) => {
     }
 }
 
-export const get_sections_by_date_and_movie: AuthenticatedRoutesHandler<{ day: Date, movie_id: number }> = async (req, res) => {
+export const get_sections_by_date_and_movie: AuthenticatedRoutesHandler<{}, {}, { day: Date, movie_id: number }> = async (req, res) => {
 
-    const { day, movie_id } = req.params
+    const { day, movie_id } = req.query
 
     try {
 
@@ -30,6 +34,7 @@ export const get_sections_by_date_and_movie: AuthenticatedRoutesHandler<{ day: D
             AND sc.day = :day
             `, {
             replacements: { movie_id, day },
+            type: Sequelize.QueryTypes.SELECT
         })
 
         res.json({ message: sections })
@@ -40,9 +45,66 @@ export const get_sections_by_date_and_movie: AuthenticatedRoutesHandler<{ day: D
 }
 
 
-export const get_places_by_section: AuthenticatedRoutesHandler<{}> = async (req, res) => {
-    const { user_id } = req
+export const get_places_by_section: AuthenticatedRoutesHandler<{}, { room_id: number, section_id: number }> = async (req, res) => {
+    const { room_id, section_id } = req.body
+    const memGet = promisify(memcached.get).bind(memcached)
+
+    try {
+        const all_places = await Place.findAll({ where: { room_id } })
+        const places_occupied = await Reservation.findAll({ where: { room_id, section_id } })
+        let places_with_reserved = await Promise.all(
+            all_places.map(async (place) => {
+                let data = await memGet(`place_id:${place.id}`)
+                if (data) return data
+            })
+        )
+        let places_reserved = places_with_reserved.filter(place => place != undefined)
+
+        let places = all_places.map((place) => {
+            let status = "available"
+            let place_is_occupied = places_occupied.find(occupied => place.id == occupied.place_id)
+            let place_is_reserved = places_reserved.find(reserved => place.id == reserved)
+
+            if (place_is_occupied) status = "occupied"
+            if (place_is_reserved) status = "occupied"
+
+            return {
+                place: place.place,
+                status
+            }
+        })
+
+        res.json({ places })
+
+    } catch (error) {
+        handleError(res, error)
+    }
 }
+
+export const choose_place: AuthenticatedRoutesHandler<{}, { section_id: string, place_id: string }> = async (req, res) => {
+
+    const { user_id } = req
+    const { section_id, place_id } = req.body
+    const memGet = promisify(memcached.get).bind(memcached)
+    const memSet = promisify(memcached.set).bind(memcached)
+
+    try {
+
+        const place_is_reserved = await memGet(`place_id:${place_id}`)
+        if (place_is_reserved) return res.status(400).json({ message: "Outra pessoa já está reservando esse lugar." })
+
+        const place_is_occupied = await Reservation.findAll({ where: { section_id, place_id } })
+        if (place_is_occupied.length !== 0) return res.status(400).json({ message: "Lucar já está ocupado." })
+
+        await memSet(`place_id:${place_id}`, user_id, 60)
+
+        res.json({ message: "Lugar reservado! Você tem 1 minuto para finalizar a seção." })
+
+    } catch (error) {
+        handleError(res, error)
+    }
+}
+
 
 
 export const create_sections: AuthenticatedRoutesHandler<{}, { movie_id: number, room_id: number, start: string, end: string }> = async (req, res) => {
@@ -87,7 +149,7 @@ export const create_sections: AuthenticatedRoutesHandler<{}, { movie_id: number,
 
 const handleError = (res: Response, error: unknown) => {
     if (error instanceof Error) {
-        return res.status(500).json({ message: error.message })
+        return res.status(400).json({ message: error.message })
     } else {
         return res.status(500).json({ message: "Erro desconhecido", error })
     }
