@@ -27,6 +27,12 @@ export interface RoomModel extends Model {
 export interface PlaceModel extends Model {
     id: number
     place: string
-    status: string
     room_id: number
+}
+
+export interface ReservationModel extends Model {
+    id: number
+    user_id: number
+    place_id: number
+    section_id: number
 }

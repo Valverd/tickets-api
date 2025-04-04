@@ -6,6 +6,9 @@ import { promisify } from "util"
 import Ticket from "../models/Ticket";
 import Room from "../models/Room";
 import Movie from "../models/Movie";
+import Section from "../models/Section";
+import Price from "../models/Price";
+import Reservation from "../models/Reservation";
 
 export const see_my_tickets: AuthenticatedRoutesHandler = async (req, res) => {
     const { user_id } = req
@@ -19,31 +22,50 @@ export const see_my_tickets: AuthenticatedRoutesHandler = async (req, res) => {
     }
 }
 
-export const buy_ticket: AuthenticatedRoutesHandler<{}, { place_id: number, price_id: number }> = async (req, res) => {
-    const { place_id } = req.body
+export const get_prices: AuthenticatedRoutesHandler<{}, { place_id: number, section_id: number }> = async (req, res) => {
+    const { place_id, section_id } = req.body
+
+    const memGet = promisify(memcached.get).bind(memcached)
+
+    try {
+        const reservation = await memGet(`place_id:${place_id}${section_id}`)
+    } catch (error) {
+        handleError(res, error)
+    }
+}
+
+export const buy_ticket: AuthenticatedRoutesHandler<{}, { place_id: number, section_id: number, price_id: number }> = async (req, res) => {
+
+    const { place_id, section_id, price_id } = req.body
     const { user_id } = req
 
     const memGet = promisify(memcached.get).bind(memcached)
 
     try {
-        const reservation = await memGet(`place_id:${place_id}`)
-
+        const reservation = await memGet(`place_id:${place_id}${section_id}`)
         if (!reservation) return res.status(404).json({ message: "Sua sessão já expirou." })
-        if (reservation != user_id) return res.status(404).json({ message: "Usuário não autenticado." })
+        if (reservation.user_id != user_id) return res.status(404).json({ message: "Usuário não autenticado." })
 
-        const place = await Place.findByPk(place_id)
-        const room = await Room.findByPk(place?.room_id)
-        const movie = await Movie.findByPk(room?.movie_id)
+        const place = await Place.findByPk(reservation.place_id)
+        if (!place) return res.status(404).json({ message: "Lugar não encontrado" })
 
-        await Place.update({ status: "occupied" }, { where: { id: place_id } })
+        const section = await Section.findByPk(reservation.section_id, { raw: true })
+        if (!section) return res.status(404).json({ message: "Sessão não encontrada" })
 
-        Ticket.create({
-            name: movie?.name,
-            price: 9.99,
+        const price = await Price.findByPk(price_id, { raw: true })
+        if (!price) return res.status(404).json({ message: "Preço informado errado" })
+
+        await Ticket.create({
             user_id,
-            movie_id: movie?.id,
             place_id,
-            room_id: room?.id
+            section_id,
+            price_id
+        })
+
+        await Reservation.create({
+            user_id,
+            place_id,
+            section_id,
         })
 
         res.json({ message: "Ingresso comprado" })

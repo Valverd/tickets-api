@@ -7,6 +7,7 @@ import Place from "../models/Place"
 import Reservation from "../models/Reservation"
 import memcached from "../../memcached"
 import { promisify } from "util"
+import { PlaceModel, ReservationModel } from "../types/model_types"
 
 export const get_sections: AuthenticatedRoutesHandler = async (req, res) => {
     try {
@@ -50,12 +51,21 @@ export const get_places_by_section: AuthenticatedRoutesHandler<{}, { room_id: nu
     const memGet = promisify(memcached.get).bind(memcached)
 
     try {
-        const all_places = await Place.findAll({ where: { room_id } })
-        const places_occupied = await Reservation.findAll({ where: { room_id, section_id } })
+        const all_places: PlaceModel[] = await db.query(`
+                SELECT p.id, p.place, p.room_id FROM Places p
+                JOIN Sections sc on sc.room_id = p.room_id
+                WHERE sc.id = :section_id
+            `, {
+            replacements: { section_id },
+            type: Sequelize.QueryTypes.SELECT
+        }
+        )
+        const places_occupied: ReservationModel[] = await Reservation.findAll({ where: { section_id } })
+        
         let places_with_reserved = await Promise.all(
             all_places.map(async (place) => {
-                let data = await memGet(`place_id:${place.id}`)
-                if (data) return data
+                let data = await memGet(`place_id:${place.id}${section_id}`)
+                if (data) return data.place_id
             })
         )
         let places_reserved = places_with_reserved.filter(place => place != undefined)
@@ -69,6 +79,7 @@ export const get_places_by_section: AuthenticatedRoutesHandler<{}, { room_id: nu
             if (place_is_reserved) status = "occupied"
 
             return {
+                id: place.id,
                 place: place.place,
                 status
             }
@@ -90,13 +101,14 @@ export const choose_place: AuthenticatedRoutesHandler<{}, { section_id: string, 
 
     try {
 
-        const place_is_reserved = await memGet(`place_id:${place_id}`)
+        const place_is_reserved = await memGet(`place_id:${place_id}${section_id}`)
         if (place_is_reserved) return res.status(400).json({ message: "Outra pessoa já está reservando esse lugar." })
 
         const place_is_occupied = await Reservation.findAll({ where: { section_id, place_id } })
+        console.log(place_is_occupied)
         if (place_is_occupied.length !== 0) return res.status(400).json({ message: "Lucar já está ocupado." })
 
-        await memSet(`place_id:${place_id}`, user_id, 60)
+        await memSet(`place_id:${place_id}${section_id}`, { user_id, place_id, section_id }, 60)
 
         res.json({ message: "Lugar reservado! Você tem 1 minuto para finalizar a seção." })
 
